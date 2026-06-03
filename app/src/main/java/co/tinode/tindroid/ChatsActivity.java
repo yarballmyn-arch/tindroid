@@ -11,11 +11,11 @@ import android.view.Menu;
 
 import java.util.List;
 
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import co.tinode.tindroid.account.ContactsManager;
 import co.tinode.tindroid.account.Utils;
 import co.tinode.tindroid.media.VxCard;
@@ -32,8 +32,8 @@ import co.tinode.tinodesdk.model.Subscription;
 /**
  * This activity owns 'me' topic.
  */
-public class ChatsActivity extends AppCompatActivity
-        implements UiUtils.ProgressIndicator, UiUtils.AvatarPreviewer,
+public class ChatsActivity extends BaseActivity
+        implements UiUtils.ProgressIndicator, UtilsMedia.MediaPreviewer,
         ImageViewFragment.AvatarCompletionHandler {
     static final String TAG_FRAGMENT_NAME = "fragment";
     static final String FRAGMENT_CHATLIST = "contacts";
@@ -41,24 +41,30 @@ public class ChatsActivity extends AppCompatActivity
     static final String FRAGMENT_AVATAR_PREVIEW = "avatar_preview";
     static final String FRAGMENT_ACC_CREDENTIALS = "acc_credentials";
     static final String FRAGMENT_ACC_HELP = "acc_help";
+    static final String FRAGMENT_ACC_GENERAL = "acc_general";
     static final String FRAGMENT_ACC_NOTIFICATIONS = "acc_notifications";
     static final String FRAGMENT_ACC_PERSONAL = "acc_personal";
     static final String FRAGMENT_ACC_SECURITY = "acc_security";
     static final String FRAGMENT_ACC_ABOUT = "acc_about";
     static final String FRAGMENT_ARCHIVE = "archive";
     static final String FRAGMENT_BANNED = "banned";
+    static final String FRAGMENT_WALLPAPERS = "wallpapers";
 
     private ContactsEventListener mTinodeListener = null;
     private MeListener mMeTopicListener = null;
     private MeTopic<VxCard> mMeTopic = null;
 
     private Account mAccount;
+    private BottomNavigationHelper bottomNavigationHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        UiUtils.setupSystemToolbar(this);
+
         setContentView(R.layout.activity_contacts);
+        applyEdgeToEdgeInsets(findViewById(android.R.id.content));
 
         setSupportActionBar(findViewById(R.id.toolbar));
 
@@ -74,6 +80,19 @@ public class ChatsActivity extends AppCompatActivity
 
         mMeTopic = Cache.getTinode().getOrCreateMeTopic();
         mMeTopicListener = new MeListener();
+
+        // Initialize bottom navigation
+        initializeBottomNavigation();
+    }
+
+    /**
+     * Initialize and setup bottom navigation view
+     */
+    private void initializeBottomNavigation() {
+        BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
+        if (bottomNav != null) {
+            bottomNavigationHelper = new BottomNavigationHelper(this, bottomNav);
+        }
     }
 
     /**
@@ -89,7 +108,8 @@ public class ChatsActivity extends AppCompatActivity
 
         Cache.setSelectedTopicName(null);
 
-        UiUtils.setupToolbar(this, null, null, false, null, false);
+        UiUtils.setupToolbar(this, null, null, false,
+                null, false, 0);
 
         if (!mMeTopic.isAttached()) {
             toggleProgressIndicator(true);
@@ -125,7 +145,7 @@ public class ChatsActivity extends AppCompatActivity
     public void onStop() {
         super.onStop();
         if (mMeTopic != null) {
-            mMeTopic.setListener(null);
+            mMeTopic.remListener(mMeTopicListener);
         }
     }
 
@@ -136,7 +156,7 @@ public class ChatsActivity extends AppCompatActivity
     }
 
     @Override
-    public void showAvatarPreview(Bundle args) {
+    public void handleMedia(Bundle args) {
         showFragment(FRAGMENT_AVATAR_PREVIEW, args);
     }
 
@@ -157,6 +177,9 @@ public class ChatsActivity extends AppCompatActivity
                     break;
                 case FRAGMENT_ACC_HELP:
                     fragment = new AccHelpFragment();
+                    break;
+                case FRAGMENT_ACC_GENERAL:
+                    fragment = new AccGeneralFragment();
                     break;
                 case FRAGMENT_ACC_NOTIFICATIONS:
                     fragment = new AccNotificationsFragment();
@@ -187,6 +210,9 @@ public class ChatsActivity extends AppCompatActivity
                     break;
                 case FRAGMENT_CHATLIST:
                     fragment = new ChatsFragment();
+                    break;
+                case FRAGMENT_WALLPAPERS:
+                    fragment = new WallpaperFragment();
                     break;
                 default:
                     throw new IllegalArgumentException("Failed to create fragment: unknown tag " + tag);
