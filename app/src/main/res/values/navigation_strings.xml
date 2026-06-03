@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="channels_label">Channels</string>
+    <string name="chats_label">Chats</string>
+</resources>
